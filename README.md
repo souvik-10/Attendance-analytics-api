@@ -1,26 +1,121 @@
-# Candidate kit
+# Employee Attendance & Analytics API
 
-Read in this order:
 
-1. `PROBLEM_STATEMENT.docx`: what you are asked to do, how it is evaluated.
-2. `openapi.yaml`: the API contract and the business rules (R1 - R10).
-3. `DATA_MODEL.md`: what is stored in MongoDB, with nine sample documents.
-4. `app/main.py`: the starter. Put **all** your code in this one file. It must start with `uvicorn app.main:app --port 8000`.
-5. `REVIEW.md`, `DECISIONS.md`: templates to fill in.
 
-`sample_data/` holds the nine sample documents as MongoDB Extended JSON; `sample_seed.py` loads them. The grader's dataset is
-much larger and contains cases they do not show.
+A REST API built with **Python 3.11+, FastAPI, and MongoDB Atlas** for employee management, attendance tracking, regularization, and analytics.
 
-## Local setup
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env            # set MONGO_URI / MONGO_DB (local docker: docker run -p 27017:27017 mongo:7)
-python sample_seed.py
-uvicorn app.main:app --port 8000 --reload
+
+
+## Features
+
+
+
+- Employee creation and listing
+
+- Attendance punch-in and punch-out
+
+- Attendance listing and regularization
+
+- Monthly employee analytics
+
+- Department attendance summaries
+
+- Late-arrival leaderboard
+
+- Department attendance trends
+
+- Administrative query-plan explanations
+
+
+
+## Requirements
+
+
+
+- Python 3.11 or newer
+
+- MongoDB Atlas account and database access
+
+- MongoDB Atlas connection string
+
+
+
+## Setup
+
+
+
+Create and activate a virtual environment in PowerShell:
+
+
+
+```powershell
+
+python -m venv .venv
+
+.\.venv\Scripts\Activate.ps1
+
 ```
-MongoDB **6.0 or newer** is required (the grader uses 7.0). MongoDB Atlas free tier (M0) works.
 
-## Submit
-A public Git repository with `app/main.py`, `requirements.txt`, `REVIEW.md`, `DECISIONS.md` and a short `README.md`.
-No `.env`, no secrets, no Dockerfile.
+
+
+Install dependencies:
+
+
+
+```powershell
+
+pip install -r requirements.txt
+
+```
+
+
+
+Set the MongoDB Atlas connection details in your PowerShell session:
+
+
+
+```powershell
+
+$env:MONGO_URI = "<your MongoDB Atlas connection string>"
+
+$env:MONGO_DB = "attendance_db"
+
+```
+
+
+
+Replace the placeholder with your actual connection string. Configure the appropriate database user and network access in MongoDB Atlas. Never commit credentials or secrets to GitHub.
+
+
+
+## Run the API
+
+
+
+```powershell
+
+uvicorn app.main:app --port 8000
+
+```
+
+
+
+API documentation:
+
+
+
+- Swagger UI: http://127.0.0.1:8000/docs
+
+- OpenAPI JSON: http://127.0.0.1:8000/openapi.json
+
+
+
+The application requires MongoDB Atlas configuration and does not use a local MongoDB fallback.
+
+
+
+## Repository
+
+
+
+The repository contains the application source, dependency list, code review, design decisions, and this README.
