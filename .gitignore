@@ -1,0 +1,26 @@
+# Environment variables and secrets
+.env
+*.env
+.env.*
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Confidential assignment materials & local sample data dumps
+PROBLEM_STATEMENT.docx
+sample_data/
+prompt.md
+
+# System & editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
