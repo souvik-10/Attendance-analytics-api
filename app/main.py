@@ -21,7 +21,8 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import DuplicateKeyError
-
+import json
+from bson import json_util
 load_dotenv()
 
 # --------------------------------------------------------------------------- #
@@ -1527,6 +1528,8 @@ def department_trend(
 # --------------------------------------------------------------------------- #
 # Endpoints (Phase B, Group B4: Admin Explain)
 # --------------------------------------------------------------------------- #
+
+
 @app.get(
     "/admin/explain/{endpoint}",
     status_code=200,
@@ -1541,8 +1544,16 @@ def explain_endpoint(
     date_from: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     date_to: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     status: Optional[StatusEnum] = None,
-    from_date_str: Optional[str] = Query(None, alias="from", pattern=r"^\d{4}-\d{2}-\d{2}$"),
-    to_date_str: Optional[str] = Query(None, alias="to", pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    from_date_str: Optional[str] = Query(
+        None,
+        alias="from",
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+    ),
+    to_date_str: Optional[str] = Query(
+        None,
+        alias="to",
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
 ):
@@ -1553,8 +1564,10 @@ def explain_endpoint(
     Accepts the same query parameters as the endpoint it explains.
     Missing required parameters -> 422.
     """
+
     if endpoint == ExplainEndpointEnum.attendance_list:
         collection_name = "attendance_logs"
+
         q, skip, limit_count = build_attendance_list_query(
             emp_code=emp_code,
             date_from=date_from,
@@ -1563,6 +1576,7 @@ def explain_endpoint(
             page=page,
             page_size=page_size,
         )
+
         cmd = {
             "find": "attendance_logs",
             "filter": q,
@@ -1573,24 +1587,33 @@ def explain_endpoint(
 
     elif endpoint == ExplainEndpointEnum.employee_monthly:
         collection_name = "attendance_logs"
+
         if not emp_code:
             raise HTTPException(
                 status_code=422,
                 detail="emp_code is required for employee_monthly explain",
             )
+
         if not month:
             raise HTTPException(
                 status_code=422,
                 detail="month is required for employee_monthly explain",
             )
+
         try:
-            start_date, end_date, last_day = get_month_date_range(month)
+            _, _, last_day = get_month_date_range(month)
         except Exception:
             raise HTTPException(
                 status_code=422,
                 detail="Invalid month format",
             )
-        pipeline = build_employee_monthly_pipeline(emp_code, month, last_day)
+
+        pipeline = build_employee_monthly_pipeline(
+            emp_code,
+            month,
+            last_day,
+        )
+
         cmd = {
             "aggregate": "attendance_logs",
             "pipeline": pipeline,
@@ -1599,21 +1622,27 @@ def explain_endpoint(
 
     elif endpoint == ExplainEndpointEnum.department_summary:
         collection_name = "employees"
+
         if not month:
             raise HTTPException(
                 status_code=422,
                 detail="month is required for department_summary explain",
             )
+
         try:
-            start_date, end_date, last_day = get_month_date_range(month)
+            start_date, end_date, _ = get_month_date_range(month)
         except Exception:
             raise HTTPException(
                 status_code=422,
                 detail="Invalid month format",
             )
+
         pipeline = build_department_summary_pipeline(
-            start_date.isoformat(), end_date.isoformat(), department
+            start_date.isoformat(),
+            end_date.isoformat(),
+            department,
         )
+
         cmd = {
             "aggregate": "employees",
             "pipeline": pipeline,
@@ -1622,21 +1651,28 @@ def explain_endpoint(
 
     elif endpoint == ExplainEndpointEnum.late_leaderboard:
         collection_name = "attendance_logs"
+
         if not month:
             raise HTTPException(
                 status_code=422,
                 detail="month is required for late_leaderboard explain",
             )
+
         try:
-            start_date, end_date, last_day = get_month_date_range(month)
+            start_date, end_date, _ = get_month_date_range(month)
         except Exception:
             raise HTTPException(
                 status_code=422,
                 detail="Invalid month format",
             )
+
         pipeline = build_late_leaderboard_pipeline(
-            start_date.isoformat(), end_date.isoformat(), limit, department
+            start_date.isoformat(),
+            end_date.isoformat(),
+            limit,
+            department,
         )
+
         cmd = {
             "aggregate": "attendance_logs",
             "pipeline": pipeline,
@@ -1645,16 +1681,19 @@ def explain_endpoint(
 
     elif endpoint == ExplainEndpointEnum.department_trend:
         collection_name = "employees"
+
         if not department:
             raise HTTPException(
                 status_code=422,
                 detail="department is required for department_trend explain",
             )
+
         if not from_date_str or not to_date_str:
             raise HTTPException(
                 status_code=422,
                 detail="'from' and 'to' dates are required for department_trend explain",
             )
+
         try:
             from_date = dt_date.fromisoformat(from_date_str)
             to_date = dt_date.fromisoformat(to_date_str)
@@ -1663,34 +1702,49 @@ def explain_endpoint(
                 status_code=422,
                 detail="Invalid date format or range",
             )
+
         if to_date < from_date:
             raise HTTPException(
                 status_code=422,
                 detail="'to' date must be >= 'from' date",
             )
+
         if (to_date - from_date).days + 1 > 92:
             raise HTTPException(
                 status_code=422,
                 detail="Date range exceeds 92 days",
             )
-        pipeline = build_department_trend_pipeline(department, from_date, to_date)
+
+        pipeline = build_department_trend_pipeline(
+            department,
+            from_date,
+            to_date,
+        )
+
         cmd = {
             "aggregate": "employees",
             "pipeline": pipeline,
             "cursor": {},
         }
 
-    # Execute explain with executionStats verbosity against MongoDB
+    # Execute explain with executionStats verbosity against MongoDB.
     try:
-        raw_explain = db.command({"explain": cmd, "verbosity": "executionStats"})
+        raw_explain = db.command(
+            {
+                "explain": cmd,
+                "verbosity": "executionStats",
+            }
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Explain execution failed: {str(e)}",
         )
 
+    # Convert BSON values, including bson.timestamp.Timestamp,
+    # into JSON-compatible Python objects.
     return {
         "endpoint": endpoint.value,
         "collection": collection_name,
-        "explain": sanitize_for_json(raw_explain),
+        "explain": json.loads(json_util.dumps(raw_explain)),
     }
