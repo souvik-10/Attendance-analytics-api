@@ -47,6 +47,8 @@ def init_indexes():
     # Employee indexes
     db.employees.create_index("emp_code", unique=True)
     db.employees.create_index("department")
+    db.employees.create_index("joined_on")
+    db.employees.create_index([("department", 1), ("joined_on", 1)])
 
     # Attendance indexes
     db.attendance_logs.create_index([("emp_code", 1), ("date", 1)], unique=True)
@@ -1171,7 +1173,8 @@ def department_summary(
     start_date_str = start_date.isoformat()
 
     pipeline = build_department_summary_pipeline(start_date_str, end_date_str, department)
-    cursor = db.employees.aggregate(pipeline)
+    hint_name = "department_1_joined_on_1" if department else "joined_on_1"
+    cursor = db.employees.aggregate(pipeline, hint=hint_name)
     items = []
     for doc in cursor:
         wh_count = doc.get("work_hours_count") or 0
@@ -1643,10 +1646,12 @@ def explain_endpoint(
             department,
         )
 
+        hint_name = "department_1_joined_on_1" if department else "joined_on_1"
         cmd = {
             "aggregate": "employees",
             "pipeline": pipeline,
             "cursor": {},
+            "hint": hint_name,
         }
 
     elif endpoint == ExplainEndpointEnum.late_leaderboard:

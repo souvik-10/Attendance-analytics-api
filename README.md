@@ -84,7 +84,7 @@ $env:MONGO_DB = "attendance_db"
 
 
 
-Replace the placeholder with your actual connection string. Configure the appropriate database user and network access in MongoDB Atlas. Never commit credentials or secrets to GitHub.
+Replace the placeholder with your actual connection string. Explicit environment variables take precedence over any local `.env` file. Configure the appropriate database user and network access (IP allowlist) in MongoDB Atlas. Never commit credentials or secrets to GitHub.
 
 
 

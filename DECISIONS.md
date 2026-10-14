@@ -1,7 +1,7 @@
-﻿# Design Decisions
+# Design Decisions
 
 ## 1. Indexes
-The unique `employees.emp_code` index enforces employee-code uniqueness. The `employees.department` index supports department filtering. The unique `attendance_logs(emp_code, date)` index prevents duplicate daily attendance records and supports employee/date lookups. The `attendance_logs(date, emp_code)` index supports attendance sorting, and `attendance_logs(date, status)` supports date and status filtering. I would avoid adding indexes to rarely queried derived fields because extra indexes increase write and storage costs.
+The unique `employees.emp_code` index enforces employee-code uniqueness. The `employees.department` index supports department filtering. The `employees.joined_on` and compound `employees(department, joined_on)` indexes support organization-wide and department-filtered headcount date filtering in department summaries without collection scans. The unique `attendance_logs(emp_code, date)` index prevents duplicate daily attendance records and supports employee/date lookups. The `attendance_logs(date, emp_code)` index supports attendance sorting, and `attendance_logs(date, status)` supports date and status filtering. I would avoid adding indexes to rarely queried derived fields because extra indexes increase write and storage costs.
 
 I considered indexing derived work-hours fields but rejected it because the current queries do not filter on them.
 

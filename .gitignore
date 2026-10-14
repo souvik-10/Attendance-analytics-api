@@ -18,6 +18,10 @@ env/
 PROBLEM_STATEMENT.docx
 sample_data/
 prompt.md
+DATA_MODEL.md
+openapi.yaml
+sample_seed.py
+review_diff.txt
 
 # System & editor artifacts
 .DS_Store
